@@ -49,7 +49,6 @@ async def compress_callback(client, callback_query):
     return
 
 caption = clean_caption(media.caption)
-
     msg = await callback_query.message.edit_text(f"📥 Downloading video...")
     input_path = f"{media.file_id}_input"
     output_path = f"{media.file_id}_{quality}.mp4"
