@@ -4,7 +4,7 @@ import subprocess
 
 API_ID = 26259762
 API_HASH = "6f33406b8cb80f659d268fccd7329b0f"
-BOT_TOKEN = "your_bot_token_here"
+BOT_TOKEN = "7876584681:AAFosfsph9Bbd4EknXP885_DobBmwdCSwXk"
 
 app = Client("video_compressor_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
