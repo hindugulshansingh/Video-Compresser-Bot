@@ -23,20 +23,23 @@ async def ask_quality(client, message: Message):
     await message.reply(
         "📥 Video received. Select compression quality:",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("240p", callback_data="compress_240p")],
-            [InlineKeyboardButton("360p", callback_data="compress_360p")],
-            [InlineKeyboardButton("480p", callback_data="compress_480p")]
+            [InlineKeyboardButton("240p", callback_data=f"compress_240p_{message.id}")],
+            [InlineKeyboardButton("360p", callback_data=f"compress_360p_{message.id}")],
+            [InlineKeyboardButton("480p", callback_data=f"compress_480p_{message.id}")]
         ])
     )
 
 @app.on_callback_query()
 async def compress_callback(client, callback_query):
     await callback_query.answer()
-    data = callback_query.data
-    quality = data.split('_')[1]
+    data = callback_query.data.split('_')
+    quality = data[1]
+    msg_id = int(data[2])
 
-    message = callback_query.message.reply_to_message
-    if not message:
+    # Get the original message using message_id
+    try:
+        message = await client.get_messages(callback_query.message.chat.id, msg_id)
+    except:
         return
 
     media = message.video or message.document
@@ -56,15 +59,9 @@ async def compress_callback(client, callback_query):
     ]
     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if not os.path.exists(output_path):
-        return
-
-    await client.send_video(
-        chat_id=message.chat.id,
-        video=output_path
-    )
-
+    if os.path.exists(output_path):
+        await client.send_video(chat_id=message.chat.id, video=output_path)
+        os.remove(output_path)
     os.remove(input_path)
-    os.remove(output_path)
 
 app.run()
