@@ -26,7 +26,7 @@ def clean_caption(caption):
     caption = re.sub(r"https?://\S+|www\.\S+", "", caption)  # remove links
     return caption.strip() + "\n\n🌟 Extracted By : @GUL5H4N 🖤"
 
-@app.on_message(filters.video | filters.document.video)
+@app.on_message(filters.video | (filters.document & filters.video))
 async def ask_quality(client, message: Message):
     await message.reply(
         "📥 Video received. Select compression quality:",
