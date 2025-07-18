@@ -1,6 +1,4 @@
 import os
-import re
-import asyncio
 import subprocess
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
@@ -20,12 +18,6 @@ quality_options = {
     "480p": "scale=-2:480"
 }
 
-def clean_caption(caption):
-    if not caption:
-        return "🌟 Extracted By : @GUL5H4N 🖤"
-    caption = re.sub(r"https?://\S+|www\.\S+", "", caption)  # remove links
-    return caption.strip() + "\n\n🌟 Extracted By : @GUL5H4N 🖤"
-
 @app.on_message(filters.video | (filters.document & filters.video))
 async def ask_quality(client, message: Message):
     await message.reply(
@@ -33,7 +25,7 @@ async def ask_quality(client, message: Message):
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("240p", callback_data="compress_240p")],
             [InlineKeyboardButton("360p", callback_data="compress_360p")],
-            [InlineKeyboardButton("480p", callback_data="compress_480p")],
+            [InlineKeyboardButton("480p", callback_data="compress_480p")]
         ])
     )
 
@@ -41,26 +33,20 @@ async def ask_quality(client, message: Message):
 async def compress_callback(client, callback_query):
     await callback_query.answer()
     data = callback_query.data
-    quality = data.split("_")[1]
-    message = callback_query.message.reply_to_message
+    quality = data.split('_')[1]
 
+    message = callback_query.message.reply_to_message
     if not message:
-        await callback_query.message.edit_text("❌ Failed to read the video. Try again.")
         return
 
     media = message.video or message.document
     if not media:
-        await callback_query.message.edit_text("❌ Failed to read the video. Try again.")
         return
 
-    caption = clean_caption(media.caption)
-    await callback_query.message.edit_text("🔻 Downloading video...")
-
-    input_path = f"{media.file_id}.mp4"
+    input_path = f"{media.file_id}_input"
     output_path = f"{media.file_id}_{quality}.mp4"
     await message.download(file_name=input_path)
 
-    await callback_query.message.edit_text(f"⚙️ Compressing to {quality}...")
     cmd = [
         "ffmpeg", "-i", input_path,
         "-vf", quality_options[quality],
@@ -68,20 +54,17 @@ async def compress_callback(client, callback_query):
         "-c:a", "aac", "-b:a", "64k",
         output_path
     ]
-    process = subprocess.run(cmd)
+    subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-    if process.returncode != 0 or not os.path.exists(output_path):
-        await callback_query.message.edit_text("❌ Compression failed.")
+    if not os.path.exists(output_path):
         return
 
-    await callback_query.message.reply_video(
-        video=output_path,
-        caption=caption
+    await client.send_video(
+        chat_id=message.chat.id,
+        video=output_path
     )
 
     os.remove(input_path)
     os.remove(output_path)
 
-if __name__ == "__main__":
-    print("⚡ Bot Started!")
-    app.run()
+app.run()
